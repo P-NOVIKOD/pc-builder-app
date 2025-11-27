@@ -47,18 +47,27 @@ func Init() error {
 
 // runMigrations выполняет все SQL миграции
 func runMigrations() error {
-	// Читаем sql из файла
-	sqlBytes, err := os.ReadFile("migrations/sql/tables.sql")
+	// 1. Создаем таблицы
+	tablesSQL, err := os.ReadFile("migrations/sql/001_create_tables.sql")
+	if err != nil {
+		return err
+	}
+	_, err = DB.Exec(string(tablesSQL))
 	if err != nil {
 		return err
 	}
 
-	// Выполняем SQL
-	_, err = DB.Exec(string(sqlBytes))
+	// 2. Создаем триггеры
+	triggersSQL, err := os.ReadFile("migrations/sql/003_create_triggers.sql")
+	if err != nil {
+		return err
+	}
+	_, err = DB.Exec(string(triggersSQL))
 	if err != nil {
 		return err
 	}
 
+	log.Println("✅ Таблицы и триггеры созданы")
 	return nil
 }
 

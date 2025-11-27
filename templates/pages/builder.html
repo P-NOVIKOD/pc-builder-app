@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PC Builder - Конструктор</title>
+    <style>
+        body { font-family: Arial; margin: 0; padding: 20px; }
+        .container { display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        .components-sidebar { background: #f8f9fa; padding: 20px; border-radius: 10px; }
+        .build-area { padding: 20px; }
+        .component-category { margin-bottom: 20px; }
+        .component-item { padding: 10px; border: 1px solid #ddd; margin: 5px 0; cursor: pointer; }
+        .build-summary { background: #e9ecef; padding: 20px; border-radius: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🛠️ Конструктор ПК</h1>
+        <nav>
+            <a href="/builder">Конструктор</a> |
+            <a href="/admin">Добавить компоненты</a> |
+            <button onclick="logout()">Выйти</button>
+        </nav>
+    </header>
+
+    <div class="container">
+        <!-- Боковая панель с компонентами -->
+        <div class="components-sidebar">
+            <h3>Компоненты</h3>
+            <div id="components-list">
+                Загрузка компонентов...
+            </div>
+        </div>
+
+        <!-- Область сборки -->
+        <div class="build-area">
+            <h2>Текущая сборка</h2>
+            <div id="current-build">
+                <p>Выберите компоненты из списка слева</p>
+            </div>
+            
+            <div class="build-summary">
+                <h3>Сводка</h3>
+                <p>Общая стоимость: <span id="total-price">0</span> ₽</p>
+                <p>Энергопотребление: <span id="total-tdp">0</span> W</p>
+                <button onclick="saveBuild()">Сохранить сборку</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentBuild = {};
+        
+        // Загрузка компонентов
+        fetch('/api/components')
+            .then(r => r.json())
+            .then(components => {
+                const container = document.getElementById('components-list');
+                // Группировка по типам
+                const byType = components.reduce((acc, comp) => {
+                    if (!acc[comp.type]) acc[comp.type] = [];
+                    acc[comp.type].push(comp);
+                    return acc;
+                }, {});
+                
+                container.innerHTML = Object.entries(byType).map(([type, items]) => `
+                    <div class="component-category">
+                        <h4>${type.toUpperCase()}</h4>
+                        ${items.map(item => `
+                            <div class="component-item" onclick="addToBuild('${type}', ${JSON.stringify(item).replace(/'/g, "&#39;")})">
+                                ${item.vendor} ${item.model} - ${item.price} ₽
+                            </div>
+                        `).join('')}
+                    </div>
+                `).join('');
+            });
+
+        function addToBuild(type, component) {
+            currentBuild[type] = component;
+            updateBuildDisplay();
+        }
+
+        function updateBuildDisplay() {
+            const container = document.getElementById('current-build');
+            const totalPrice = Object.values(currentBuild).reduce((sum, comp) => sum + comp.price, 0);
+            const totalTdp = Object.values(currentBuild).reduce((sum, comp) => sum + (comp.tdp || 0), 0);
+            
+            container.innerHTML = Object.entries(currentBuild).map(([type, comp]) => `
+                <div class="build-component">
+                    <strong>${type}:</strong> ${comp.vendor} ${comp.model} - ${comp.price} ₽
+                    <button onclick="removeFromBuild('${type}')">✕</button>
+                </div>
+            `).join('');
+            
+            document.getElementById('total-price').textContent = totalPrice;
+            document.getElementById('total-tdp').textContent = totalTdp;
+        }
+
+        function removeFromBuild(type) {
+            delete currentBuild[type];
+            updateBuildDisplay();
+        }
+
+        function saveBuild() {
+            const buildName = prompt('Название сборки:');
+            if (buildName) {
+                fetch('/api/builds', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        name: buildName,
+                        components: currentBuild
+                    })
+                }).then(() => alert('Сборка сохранена!'));
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUserId');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>

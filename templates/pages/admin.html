@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PC Builder - Управление</title>
+    <style>
+        body { font-family: Arial; margin: 0; padding: 20px; }
+        .admin-container { max-width: 800px; margin: 0 auto; }
+        .component-form { background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>⚙️ Управление компонентами</h1>
+        <nav>
+            <a href="/builder">← Назад к конструктору</a>
+        </nav>
+    </header>
+
+    <div class="admin-container">
+        <div class="component-form">
+            <h3>Добавить новый компонент</h3>
+            <form id="component-form">
+                <div class="form-group">
+                    <label>Тип компонента:</label>
+                    <select id="component-type" onchange="updateFormFields()">
+                        <option value="cpu">Процессор</option>
+                        <option value="gpu">Видеокарта</option>
+                        <option value="motherboard">Материнская плата</option>
+                        <option value="ram">Оперативная память</option>
+                    </select>
+                </div>
+                
+                <div id="dynamic-fields">
+                    <!-- Поля будут генерироваться динамически -->
+                </div>
+
+                <button type="submit">Добавить компонент</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const fieldTemplates = {
+            cpu: [
+                {name: 'vendor', label: 'Производитель', type: 'text'},
+                {name: 'model', label: 'Модель', type: 'text'},
+                {name: 'price', label: 'Цена', type: 'number'},
+                {name: 'core_count', label: 'Количество ядер', type: 'number'}
+            ],
+            gpu: [
+                {name: 'vendor', label: 'Производитель', type: 'text'},
+                {name: 'model', label: 'Модель', type: 'text'},
+                {name: 'price', label: 'Цена', type: 'number'},
+                {name: 'vram_size', label: 'Объем VRAM (GB)', type: 'number'}
+            ]
+        };
+
+        function updateFormFields() {
+            const type = document.getElementById('component-type').value;
+            const container = document.getElementById('dynamic-fields');
+            
+            container.innerHTML = fieldTemplates[type].map(field => `
+                <div class="form-group">
+                    <label>${field.label}:</label>
+                    <input type="${field.type}" name="${field.name}" required>
+                </div>
+            `).join('');
+        }
+
+        // Инициализация формы
+        updateFormFields();
+
+        document.getElementById('component-form').onsubmit = function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const component = {
+                type: document.getElementById('component-type').value,
+                ...Object.fromEntries(formData)
+            };
+            
+            fetch('/api/components', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(component)
+            }).then(() => {
+                alert('Компонент добавлен!');
+                this.reset();
+            });
+        };
+    </script>
+</body>
+</html>

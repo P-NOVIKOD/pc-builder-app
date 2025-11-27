@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PC Builder - Вход</title>
+    <style>
+        body { font-family: Arial; margin: 0; padding: 20px; background: #f5f5f5; }
+        .login-container { max-width: 400px; margin: 100px auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { width: 100%; padding: 12px; background: #007acc; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        .user-list { margin-top: 20px; }
+        .user-card { padding: 10px; border: 1px solid #ddd; margin: 5px 0; cursor: pointer; }
+        .user-card:hover { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h1>🖥️ PC Builder</h1>
+        <p>Выберите пользователя для входа:</p>
+        
+        <div class="user-list" id="users-list">
+            Загрузка пользователей...
+        </div>
+
+        <div style="text-align: center; margin-top: 20px;">
+            <p>Или создайте нового пользователя:</p>
+            <button onclick="showCreateUser()">Создать пользователя</button>
+        </div>
+    </div>
+
+    <script>
+        // Загрузка списка пользователей
+        fetch('/api/users')
+            .then(r => r.json())
+            .then(users => {
+                const container = document.getElementById('users-list');
+                container.innerHTML = users.map(user => 
+                    `<div class="user-card" onclick="login(${user.id})">
+                        <strong>${user.username}</strong><br>
+                        <small>${user.email}</small>
+                    </div>`
+                ).join('');
+            });
+
+        function login(userId) {
+            // Простой вход - сохраняем ID в localStorage
+            localStorage.setItem('currentUserId', userId);
+            window.location.href = '/builder';
+        }
+
+        function showCreateUser() {
+            const username = prompt('Введите имя пользователя:');
+            const email = prompt('Введите email:');
+            if (username && email) {
+                fetch('/api/users', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({username, email})
+                }).then(() => location.reload());
+            }
+        }
+    </script>
+</body>
+</html>
